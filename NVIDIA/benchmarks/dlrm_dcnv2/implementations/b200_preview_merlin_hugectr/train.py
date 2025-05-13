@@ -25,7 +25,9 @@ import hugectr
 import mlperf_logger
 import sharding
 
-TRAIN_NUM_SAMPLES = 4195197692
+TRAIN_NUM_SAMPLES = 89137319
+TRAIN_NUM_SAMPLES_FULL = 4195197692
+# 89137318 for test set and 89137319 for val set
 EVAL_NUM_SAMPLES = 89137319
 TABLE_SIZE_ARRAY = [
     40000000,
@@ -186,7 +188,7 @@ parser.add_argument(
     "--display_interval",
     help="Display throughput stats every number of iterations",
     type=int,
-    default=100,
+    default=1000000000,
 )
 parser.add_argument(
     "--eval_interval",
@@ -198,7 +200,7 @@ parser.add_argument(
     "--auc_threshold",
     help="AUC threshold to reach to stop training",
     type=float,
-    default=0.80275,
+    default=0.999999,
 )
 parser.add_argument(
     "--sharding_plan",
@@ -283,7 +285,7 @@ if args.minimum_training_time > 0:
 logging.basicConfig(level=logging.INFO, format="%(message)s")
 
 # Dependent parameters (if not set)
-iter_per_epoch = TRAIN_NUM_SAMPLES / args.batchsize
+iter_per_epoch = TRAIN_NUM_SAMPLES_FULL / args.batchsize
 if args.max_iter is None:
     args.max_iter = math.ceil(iter_per_epoch)
 if args.eval_interval is None:
@@ -367,9 +369,10 @@ reader = hugectr.DataReaderParams(
     eval_num_samples=EVAL_NUM_SAMPLES,
     cache_eval_data=1,
     slot_size_array=TABLE_SIZE_ARRAY,
+    # num_workers=16,
     async_param=hugectr.AsyncParam(
-        num_threads=1,
-        num_batches_per_thread=16,
+        num_threads=4,
+        num_batches_per_thread=8,
         shuffle=False,
         multi_hot_reader=True,
         is_dense_float=True,
@@ -488,4 +491,3 @@ model.fit(
     snapshot=2000000,
     snapshot_prefix="dlrm",
 )
-

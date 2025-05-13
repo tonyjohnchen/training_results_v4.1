@@ -1,0 +1,72 @@
+--- A/Dockerfile 2025-03-26 00:14:11.359188747 +0000
++++ B/Dockerfile 2025-03-25 23:51:50.103126394 +0000
+@@ -12,11 +12,11 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
+-ARG FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:24.04-py3
++ARG FROM_IMAGE_NAME=nvcr.io/nvidia/pytorch:25.01-py3
+ 
+ FROM ${FROM_IMAGE_NAME}
+ 
+-ARG SM="80;90"
++ARG SM="90;100"
+ ARG ENABLE_MULTINODES=ON
+ 
+ ARG HWLOC_VERSION=2.4.1
+@@ -28,10 +28,8 @@
+     libboost-serialization-dev \
+         libtbb-dev \
+         libaio-dev \
+-        #   Required to build RocksDB.
+         libgflags-dev \
+         zlib1g-dev libbz2-dev libsnappy-dev liblz4-dev libzstd-dev \
+-        #   Required to build RdKafka.
+         zlib1g-dev libzstd-dev \
+         libssl-dev libsasl2-dev && \
+     rm -rf /var/lib/apt/lists/*
+@@ -47,7 +45,7 @@
+     make -j$(nproc) && make install && \
+     rm -rf /var/tmp/hwloc-${HWLOC_VERSION} /var/tmp/hwloc-${HWLOC_VERSION}.tar.gz
+ 
+-ENV CPATH=/usr/local/include:$CPATH
++ENV CPATH=/usr/local/include
+ 
+ # Env variables for NCCL
+ ENV NCCL_LAUNCH_MODE=PARALLEL
+@@ -58,7 +56,8 @@
+     SHARP_COLL_LOG_LEVEL=3 \
+     HCOLL_ENABLE_MCAST=0
+ 
+-RUN ln -s /usr/lib/x86_64-linux-gnu/libibverbs.so.1.14.39.0 /usr/lib/x86_64-linux-gnu/libibverbs.so
++RUN ln -s /usr/lib/x86_64-linux-gnu/libibverbs.so.1 /usr/lib/x86_64-linux-gnu/libibverbs.so
++RUN mkdir -p /workspace/dlrm
+ 
+ WORKDIR /workspace/dlrm
+ COPY . .
+@@ -69,14 +68,14 @@
+ #  for the latest PyT base image (following conda removal):
+ RUN pip3 uninstall -y tbb
+ 
+-ENV PYTHON_VERSION=3.10
++ENV PYTHON_VERSION=3.12
+ # HugeCTR
+ RUN if [ "$RELEASE" = "true" ]; \
+     then \
+     cd /workspace/dlrm/ && \
+     git clone --recurse-submodules -b v24.04.00 https://github.com/NVIDIA-Merlin/HugeCTR.git hugectr && \
+         cd hugectr && \
+-        git log -n 1 && \
++        git log -n 1 && git checkout v25.03.00 && \
+         mkdir build && cd build && \
+         cmake -DCMAKE_BUILD_TYPE=Release -DSM=$SM -DUSE_CUDART_STATIC=ON \
+             -DENABLE_MULTINODES=$ENABLE_MULTINODES -DSHARP_A2A=OFF .. && \
+@@ -92,7 +91,7 @@
+ ENV PATH=/usr/local/hugectr/bin:$PATH \
+     LIBRARY_PATH=/usr/local/hugectr/lib:$LIBRARY_PATH \
+     LD_LIBRARY_PATH=/usr/local/hugectr/lib:$LD_LIBRARY_PATH \
+-    PYTHONPATH=/usr/local/hugectr/lib:$PYTHONPATH
++    PYTHONPATH=/usr/local/hugectr/lib
+ 
+ HEALTHCHECK NONE
+ ENTRYPOINT []
