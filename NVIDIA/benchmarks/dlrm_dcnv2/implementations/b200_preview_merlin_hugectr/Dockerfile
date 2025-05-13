@@ -46,6 +46,27 @@ RUN mkdir -p /var/tmp && wget -q -nc --no-check-certificate -P /var/tmp https://
 
 ENV CPATH=/usr/local/include
 
+# Create the necessary directory
+RUN mkdir -p /usr/local/gib
+
+# Install NCCL plugin from the installer image
+# TODO: replace the image to be consistent with the NCCL plugin URL
+COPY --from=us-docker.pkg.dev/gce-ai-infra/gpudirect-gib/nccl-plugin-gib:v1.0.5 /usr/local/gib /usr/local/gib
+
+ENV NCCL_NET=gIB
+ENV NCCL_CROSS_NIC=0
+ENV NCCL_NET_GDR_LEVEL=PIX
+ENV NCCL_P2P_NET_CHUNKSIZE=131072
+ENV NCCL_P2P_PCI_CHUNKSIZE=131072
+ENV NCCL_P2P_NVL_CHUNKSIZE=524288
+ENV NCCL_NVLS_CHUNKSIZE=524288
+ENV NCCL_IB_GID_INDEX=3
+ENV NCCL_IB_ADAPTIVE_ROUTING=1
+ENV NCCL_IB_QPS_PER_CONNECTION=4
+ENV NCCL_IB_TC=52
+ENV NCCL_IB_FIFO_TC=84
+ENV NCCL_TUNER_CONFIG_PATH=/usr/local/gib/configs/tuner_config_a4.txtpb
+
 # Env variables for NCCL
 ENV NCCL_LAUNCH_MODE=PARALLEL
 
